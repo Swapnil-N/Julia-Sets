@@ -8,37 +8,53 @@ public class JuliaSet extends JPanel implements AdjustmentListener, ActionListen
     JFrame frame;
     JScrollBar[] scrollBarArr;
     JCheckBox invert;
-    Boolean flip = true;
-
+    JCheckBox reset;
+    
     int height;
     int width;
-    double A = 0;
-    double B = 0;
 
-    float maxIter = 300;
+    double A;
+    double B;    
+    Boolean fliped;
+    float maxIter;
+    float zoom;
+    int c;
+    float saturation;
+    float brightness;
     
     public JuliaSet(){
 
         frame = new JFrame("Julia Set Program");
         frame.add(this);
-        scrollBarArr = new JScrollBar[5];
+        scrollBarArr = new JScrollBar[6];
         invert = new JCheckBox();
         invert.addActionListener(this);
+        reset = new JCheckBox();
+        reset.addActionListener(this);
 
         JPanel scrollPanel = new JPanel();
         scrollPanel.setLayout(new GridLayout(1, 3));
 
-        for (int x=0;x<5;x++){
-            scrollBarArr[x] = new JScrollBar(JScrollBar.VERTICAL, 0, 0, 0, 255);
+        scrollBarArr[0] = new JScrollBar(JScrollBar.VERTICAL, 0, 0, 0, 800); // for A
+        scrollBarArr[1] = new JScrollBar(JScrollBar.VERTICAL, 0, 0, 0, 800); // for B
+        scrollBarArr[2] = new JScrollBar(JScrollBar.VERTICAL, 100, 0, 10, 1000); // for zoom
+        scrollBarArr[3] = new JScrollBar(JScrollBar.VERTICAL, 100, 0, 0, 100); // for saturation
+        scrollBarArr[4] = new JScrollBar(JScrollBar.VERTICAL, 100, 0, 0, 100); // for brightness
+        scrollBarArr[5] = new JScrollBar(JScrollBar.VERTICAL, 100, 0, 10, 1000); // for maxIters
+
+        for (int x=0;x<6;x++){
             scrollBarArr[x].addAdjustmentListener(this);
             scrollPanel.add(scrollBarArr[x]);
             scrollBarArr[x].setUnitIncrement(1);
         }
+        
+        resetScreen();
 
         JPanel onePanel = new JPanel();
         onePanel.setLayout(new BorderLayout());
         onePanel.add(scrollPanel, BorderLayout.CENTER);
         onePanel.add(invert, BorderLayout.SOUTH);
+        onePanel.add(reset, BorderLayout.NORTH);
 
         frame.add(onePanel, BorderLayout.EAST);
         frame.setSize(1000, 800);
@@ -47,16 +63,12 @@ public class JuliaSet extends JPanel implements AdjustmentListener, ActionListen
 
         width = frame.getWidth();
         height = frame.getHeight();
-
     }
 
     public void paintComponent(Graphics g){
         super.paintComponent(g);
 
-        //g.fillRect(0, 0, frame.getWidth(), frame.getHeight());
-
         drawJuliaSet(g);
-
     }
 
     public void drawJuliaSet(Graphics g) {
@@ -64,12 +76,10 @@ public class JuliaSet extends JPanel implements AdjustmentListener, ActionListen
         width = frame.getWidth();
         height = frame.getHeight();
 
-        for (int x=0;x<width;x++){           
+        for (int x=0;x<width;x++){
             for (int y=0;y<height;y++){
 
-                float zoom = 1f;
                 float counter = maxIter;
-
                 double zx = 1.5*((x-0.5*width)/(0.5*zoom*width));
                 double zy = (y-0.5*height)/(.5*zoom*height);
 
@@ -80,39 +90,69 @@ public class JuliaSet extends JPanel implements AdjustmentListener, ActionListen
                     counter--;
                 }
 
-                int c;
-                if(counter>0)
-                    c = Color.HSBtoRGB((maxIter/counter)%1, 1, 1);
-                else 
-                    c = Color.HSBtoRGB(maxIter/counter,1, 0);
+                float hue = (maxIter/counter)%1;
+                if(counter>0){
+                    if (fliped)
+                        c = Color.HSBtoRGB(360-hue, saturation, brightness);
+                    else
+                        c = Color.HSBtoRGB(hue, saturation, brightness);
+                }
+                else
+                    c = Color.HSBtoRGB(hue, 1, 0);
 
                 image.setRGB(x, y, c);
             }
         }
+
         g.drawImage(image, 0, 0, null);
     }
 
-    public void adjustmentValueChanged(AdjustmentEvent e) {
+    public void resetScreen(){
+        A = 0;
+        B = 0;    
+        fliped = false;
+        maxIter = 100;
+        zoom = 1;
+        c = 0;
+        saturation = 1;
+        brightness = 1;
 
-        for (int i=0;i<3;i++){
-            if(e.getSource() == scrollBarArr[i]){
-                //color[i] = scrollBar[i].getValue();
-            }
-        }
+        scrollBarArr[0].setValue(0);
+        scrollBarArr[1].setValue(0);
+        scrollBarArr[2].setValue(100);
+        scrollBarArr[3].setValue(100);
+        scrollBarArr[4].setValue(100);
+        scrollBarArr[5].setValue(100);
+    }
+
+    public void adjustmentValueChanged(AdjustmentEvent e) {
+        if(e.getSource() == scrollBarArr[0])
+            A = scrollBarArr[0].getValue()/1000.0;
+
+        if(e.getSource() == scrollBarArr[1])
+            B = scrollBarArr[1].getValue()/1000.0;
+        
+        if(e.getSource() == scrollBarArr[2])
+            zoom = (float) (scrollBarArr[2].getValue()/100.0);
+        
+        if(e.getSource() == scrollBarArr[3])
+            saturation = (float) (scrollBarArr[3].getValue()/100.0);
+        
+        if(e.getSource() == scrollBarArr[4])
+            brightness = (float) (scrollBarArr[4].getValue()/100.0);
+        
+        if(e.getSource() == scrollBarArr[5])
+            maxIter = (float) (scrollBarArr[5].getValue());
 
         repaint();
     }
 
     public void actionPerformed(ActionEvent e){
-        if (e.getSource() == invert){
-            for (int i=0;i<3;i++){
-            }
-
-            /*if (flip){
-                scrollBar[i].setValue(scrollBar[i]);
-            }*/
-
-        }
+        if (e.getSource() == invert)
+            fliped = !fliped;
+    
+        if (e.getSource() == reset)
+            resetScreen();
 
         repaint();
     }
